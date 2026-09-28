@@ -1,0 +1,132 @@
+#!/usr/bin/python3
+"""Turn the BY-GM18CU USB mic's hardware mute button into a dictation key.
+
+The button toggles the mic's hardware mute and reports nothing to the host
+(no HID event, no mixer change): a muted mic simply streams exact digital
+zeros, while an unmuted one always carries some noise floor. This watcher
+listens to the mic and taps a virtual key whenever the mute state flips:
+
+    unmute (LED live) -> tap KEY_VOICECOMMAND  (Typeless: start dictating)
+    mute              -> tap KEY_VOICECOMMAND  (Typeless: finish)
+
+Typeless shortcuts are press-once toggles (holding shows a "don't hold" hint),
+so bind "VoiceCommand" as the Dictate shortcut. The virtual device is disabled in Hyprland's config so
+the key never reaches applications; Typeless reads it straight from evdev.
+"""
+import fcntl
+import os
+import signal
+import struct
+import subprocess
+import sys
+import time
+
+SOURCE = os.environ.get(
+    "MIC_BUTTON_SOURCE", "alsa_input.usb-JIAYZ_BY-GM18CU_20210513-00.mono-fallback")
+DEVICE_NAME = b"Typeless Mic Button"
+KEY_VOICECOMMAND = 0x246
+EV_SYN, EV_KEY, SYN_REPORT = 0x00, 0x01, 0
+
+RATE = 16000
+CHUNK_BYTES = RATE // 50 * 2          # 20 ms of s16le mono
+MUTE_CHUNKS = 5                       # 100 ms of exact zeros -> muted
+UNMUTE_CHUNKS = 2                     # 40 ms of signal -> live
+
+UI_DEV_CREATE = 0x5501
+UI_DEV_DESTROY = 0x5502
+UI_SET_EVBIT = 0x40045564
+UI_SET_KEYBIT = 0x40045565
+UI_DEV_SETUP = 0x405C5503             # _IOW('U', 3, struct uinput_setup /* 92 bytes */)
+BUS_VIRTUAL = 0x06
+
+
+def log(msg):
+    print(msg, flush=True)
+
+
+class VirtualKey:
+    def __init__(self):
+        self.fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+        fcntl.ioctl(self.fd, UI_SET_EVBIT, EV_KEY)
+        fcntl.ioctl(self.fd, UI_SET_KEYBIT, KEY_VOICECOMMAND)
+        setup = struct.pack("HHHH80sI", BUS_VIRTUAL, 0x1209, 0x6d62, 1, DEVICE_NAME, 0)
+        fcntl.ioctl(self.fd, UI_DEV_SETUP, setup)
+        fcntl.ioctl(self.fd, UI_DEV_CREATE)
+        self.down = False
+
+    def _emit(self, etype, code, value):
+        os.write(self.fd, struct.pack("llHHi", 0, 0, etype, code, value))
+
+    def set(self, down):
+        if down == self.down:
+            return
+        self._emit(EV_KEY, KEY_VOICECOMMAND, 1 if down else 0)
+        self._emit(EV_SYN, SYN_REPORT, 0)
+        self.down = down
+
+    def tap(self):
+        self.set(True)
+        time.sleep(0.04)
+        self.set(False)
+
+    def close(self):
+        try:
+            self.set(False)
+            fcntl.ioctl(self.fd, UI_DEV_DESTROY)
+        finally:
+            os.close(self.fd)
+
+
+def watch(key):
+    """Capture until the source goes away. Returns when parec exits."""
+    proc = subprocess.Popen(
+        ["parec", "-d", SOURCE, "--format=s16le", f"--rate={RATE}", "--channels=1",
+         "--raw", "--latency-msec=20", "--client-name=typeless-mic-button",
+         "--stream-name=Mic button watcher"],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    zero = bytes(CHUNK_BYTES)
+    live = None                       # unknown until the first stable reading
+    zeros = signal_run = 0
+    try:
+        while True:
+            buf = proc.stdout.read(CHUNK_BYTES)
+            if len(buf) < CHUNK_BYTES:
+                break
+            if buf == zero:
+                zeros, signal_run = zeros + 1, 0
+            else:
+                zeros, signal_run = 0, signal_run + 1
+            if live is not False and zeros >= MUTE_CHUNKS:
+                if live is not None:
+                    log("muted -> tap")
+                    key.tap()
+                else:
+                    log("initial state: muted")
+                live = False
+            elif live is not True and signal_run >= UNMUTE_CHUNKS:
+                if live is not None:
+                    log("live -> tap")
+                    key.tap()
+                else:
+                    log("initial state: live")
+                live = True
+    finally:
+        key.set(False)
+        proc.kill()
+        proc.wait()
+
+
+def main():
+    key = VirtualKey()
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+    try:
+        while True:
+            watch(key)
+            log(f"capture from {SOURCE} ended; retrying")
+            time.sleep(2)
+    finally:
+        key.close()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,7 @@
+{
+  global:
+    keyboard_say_hello; startMonitor; stopMonitor; processEvents;
+    updateTargetShortcuts; resetPressingKeycodes; setWatcherInterval;
+    getKeyboardLayoutInfo; getKeyboardDeviceList;
+  local: *;
+};

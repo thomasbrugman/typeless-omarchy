@@ -1,0 +1,14 @@
+[Unit]
+Description=Mic mute button -> Typeless dictation key
+After=pipewire-pulse.service
+PartOf=graphical-session.target
+
+[Service]
+# MIC_BUTTON_SOURCE=<pulse source name> selects the microphone.
+EnvironmentFile=-%h/.config/typeless-mic-button.env
+ExecStart=%h/.local/bin/typeless-mic-button
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target

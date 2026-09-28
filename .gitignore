@@ -1,0 +1,15 @@
+# Downloads, build output and anything derived from the proprietary package
+/dl/
+/work/
+/stage/
+*.deb
+helpers/out/
+helpers/**/node_modules/
+helpers/**/.obj/
+helpers/**/test/build/
+helpers/input-helper/build/
+helpers/libopusenc/work/
+helpers/libopusenc/*.tar.gz
+*.o
+*.so
+__pycache__/

@@ -1,0 +1,18 @@
+{
+  global:
+    cleanup_input_helper;
+    deleteBackward;
+    getCurrentInputState;
+    getCurrentInputStateAsync;
+    getSelectedText;
+    getSelectedTextAsync;
+    getSelectedTextBySimulateCopyAsync;
+    insertRichText;
+    insertText;
+    recover_input_helper_after_resume;
+    restore_voice_ime;
+    testTSFFunction;
+    warmup_voice_ime;
+  local:
+    *;
+};
