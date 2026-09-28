@@ -92,6 +92,18 @@ Setup: `./install.sh --mic-button=<source>` (find the source with
 `pactl list short sources`; the default is the BY-GM18CU), then in Typeless
 set the **Dictate** shortcut by pressing the mic button once.
 
+The key and behaviour are set in `~/.config/typeless-mic-button.env`
+(restart with `systemctl --user restart typeless-mic-button`):
+
+| App | `MIC_BUTTON_KEY` | `MIC_BUTTON_MODE` | Bind in the app |
+|---|---|---|---|
+| Typeless (default) | `voicecommand` | `tap` | Dictate → press the button once |
+| Wispr Flow | `f24` | `hold` | Push-to-talk → unmute, then mute |
+
+Wispr Flow only reads devices that have letter keys and has no
+`VoiceCommand` key code, so for Wispr the watcher sends F24 and holds it
+while the mic is live (push-to-talk).
+
 - The virtual device is disabled in Hyprland (`config/hypr/typeless.lua`) so
   the key never reaches apps; Typeless reads `/dev/input` directly.
 - The watcher keeps a capture stream open, so Omarchy's bar microphone icon

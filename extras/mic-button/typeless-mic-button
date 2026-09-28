@@ -1,17 +1,22 @@
 #!/usr/bin/python3
-"""Turn the BY-GM18CU USB mic's hardware mute button into a dictation key.
+"""Turn a USB mic's hardware mute button into a dictation key.
 
-The button toggles the mic's hardware mute and reports nothing to the host
-(no HID event, no mixer change): a muted mic simply streams exact digital
-zeros, while an unmuted one always carries some noise floor. This watcher
-listens to the mic and taps a virtual key whenever the mute state flips:
+The button on mics like the JIAYZ BY-GM18CU toggles a hardware mute and reports
+nothing to the host (no HID event, no mixer change): a muted mic simply streams
+exact digital zeros, while an unmuted one always carries some noise floor. This
+watcher listens to the mic and drives a virtual key from the mute state.
 
-    unmute (LED live) -> tap KEY_VOICECOMMAND  (Typeless: start dictating)
-    mute              -> tap KEY_VOICECOMMAND  (Typeless: finish)
+Configuration (environment, e.g. ~/.config/typeless-mic-button.env):
+  MIC_BUTTON_SOURCE  PulseAudio/PipeWire source of the mic
+  MIC_BUTTON_KEY     voicecommand (default) or f13..f24
+  MIC_BUTTON_MODE    tap (default): tap the key on every mute/unmute
+                       -> Typeless, whose shortcuts are press-once toggles
+                     hold: key held while the mic is live
+                       -> Wispr Flow push-to-talk
 
-Typeless shortcuts are press-once toggles (holding shows a "don't hold" hint),
-so bind "VoiceCommand" as the Dictate shortcut. The virtual device is disabled in Hyprland's config so
-the key never reaches applications; Typeless reads it straight from evdev.
+The virtual device also advertises letter keys (Wispr Flow's helper only reads
+devices that have them) and is disabled in Hyprland's config, so the key never
+reaches applications; the dictation apps read it straight from evdev.
 """
 import fcntl
 import os
@@ -23,8 +28,14 @@ import time
 
 SOURCE = os.environ.get(
     "MIC_BUTTON_SOURCE", "alsa_input.usb-JIAYZ_BY-GM18CU_20210513-00.mono-fallback")
-DEVICE_NAME = b"Typeless Mic Button"
-KEY_VOICECOMMAND = 0x246
+DEVICE_NAME = b"Typeless Mic Button"   # Hyprland name: typeless-mic-button
+KEYS = {"voicecommand": 0x246, **{f"f{n}": 183 + n - 13 for n in range(13, 25)}}
+KEY_NAME = os.environ.get("MIC_BUTTON_KEY", "voicecommand").lower()
+MODE = os.environ.get("MIC_BUTTON_MODE", "tap").lower()
+if KEY_NAME not in KEYS or MODE not in ("tap", "hold"):
+    sys.exit(f"bad MIC_BUTTON_KEY={KEY_NAME!r} or MIC_BUTTON_MODE={MODE!r}")
+KEY = KEYS[KEY_NAME]
+LETTER_KEYS = [*range(16, 26), *range(30, 39), *range(44, 51)]   # KEY_Q..P, A..L, Z..M
 EV_SYN, EV_KEY, SYN_REPORT = 0x00, 0x01, 0
 
 RATE = 16000
@@ -48,7 +59,8 @@ class VirtualKey:
     def __init__(self):
         self.fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK | os.O_CLOEXEC)
         fcntl.ioctl(self.fd, UI_SET_EVBIT, EV_KEY)
-        fcntl.ioctl(self.fd, UI_SET_KEYBIT, KEY_VOICECOMMAND)
+        for code in (KEY, *LETTER_KEYS):
+            fcntl.ioctl(self.fd, UI_SET_KEYBIT, code)
         setup = struct.pack("HHHH80sI", BUS_VIRTUAL, 0x1209, 0x6d62, 1, DEVICE_NAME, 0)
         fcntl.ioctl(self.fd, UI_DEV_SETUP, setup)
         fcntl.ioctl(self.fd, UI_DEV_CREATE)
@@ -60,7 +72,7 @@ class VirtualKey:
     def set(self, down):
         if down == self.down:
             return
-        self._emit(EV_KEY, KEY_VOICECOMMAND, 1 if down else 0)
+        self._emit(EV_KEY, KEY, 1 if down else 0)
         self._emit(EV_SYN, SYN_REPORT, 0)
         self.down = down
 
@@ -98,17 +110,17 @@ def watch(key):
                 zeros, signal_run = 0, signal_run + 1
             if live is not False and zeros >= MUTE_CHUNKS:
                 if live is not None:
-                    log("muted -> tap")
-                    key.tap()
+                    log(f"muted -> {KEY_NAME} {'tap' if MODE == 'tap' else 'up'}")
+                    key.tap() if MODE == "tap" else key.set(False)
                 else:
                     log("initial state: muted")
                 live = False
             elif live is not True and signal_run >= UNMUTE_CHUNKS:
                 if live is not None:
-                    log("live -> tap")
-                    key.tap()
+                    log(f"live -> {KEY_NAME} {'tap' if MODE == 'tap' else 'down'}")
+                    key.tap() if MODE == "tap" else key.set(True)
                 else:
-                    log("initial state: live")
+                    log("initial state: live (waiting for the next unmute)")
                 live = True
     finally:
         key.set(False)
@@ -118,6 +130,7 @@ def watch(key):
 
 def main():
     key = VirtualKey()
+    log(f"key={KEY_NAME} mode={MODE} source={SOURCE}")
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     try:
         while True:
