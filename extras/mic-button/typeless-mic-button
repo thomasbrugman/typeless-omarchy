@@ -9,6 +9,9 @@ watcher listens to the mic and drives a virtual key from the mute state.
 Configuration (environment, e.g. ~/.config/typeless-mic-button.env):
   MIC_BUTTON_SOURCE  PulseAudio/PipeWire source of the mic
   MIC_BUTTON_KEY     voicecommand (default) or f13..f24
+  MIC_BUTTON_MODIFIER  optional modifier held with the key: leftctrl,
+                     rightctrl, leftalt, rightalt, leftshift, rightshift,
+                     leftmeta, rightmeta (Wispr Flow requires one)
   MIC_BUTTON_MODE    tap (default): tap the key on every mute/unmute
                        -> Typeless, whose shortcuts are press-once toggles
                      hold: key held while the mic is live
@@ -35,6 +38,13 @@ MODE = os.environ.get("MIC_BUTTON_MODE", "tap").lower()
 if KEY_NAME not in KEYS or MODE not in ("tap", "hold"):
     sys.exit(f"bad MIC_BUTTON_KEY={KEY_NAME!r} or MIC_BUTTON_MODE={MODE!r}")
 KEY = KEYS[KEY_NAME]
+MODIFIERS = {"leftctrl": 29, "rightctrl": 97, "leftalt": 56, "rightalt": 100,
+             "leftshift": 42, "rightshift": 54, "leftmeta": 125, "rightmeta": 126}
+MOD_NAME = os.environ.get("MIC_BUTTON_MODIFIER", "").lower()
+if MOD_NAME and MOD_NAME not in MODIFIERS:
+    sys.exit(f"bad MIC_BUTTON_MODIFIER={MOD_NAME!r}")
+CHORD = [MODIFIERS[MOD_NAME], KEY] if MOD_NAME else [KEY]
+CHORD_NAME = "+".join(filter(None, [MOD_NAME, KEY_NAME]))
 LETTER_KEYS = [*range(16, 26), *range(30, 39), *range(44, 51)]   # KEY_Q..P, A..L, Z..M
 EV_SYN, EV_KEY, SYN_REPORT = 0x00, 0x01, 0
 
@@ -59,7 +69,7 @@ class VirtualKey:
     def __init__(self):
         self.fd = os.open("/dev/uinput", os.O_WRONLY | os.O_NONBLOCK | os.O_CLOEXEC)
         fcntl.ioctl(self.fd, UI_SET_EVBIT, EV_KEY)
-        for code in (KEY, *LETTER_KEYS):
+        for code in (*CHORD, *LETTER_KEYS):
             fcntl.ioctl(self.fd, UI_SET_KEYBIT, code)
         setup = struct.pack("HHHH80sI", BUS_VIRTUAL, 0x1209, 0x6d62, 1, DEVICE_NAME, 0)
         fcntl.ioctl(self.fd, UI_DEV_SETUP, setup)
@@ -72,8 +82,10 @@ class VirtualKey:
     def set(self, down):
         if down == self.down:
             return
-        self._emit(EV_KEY, KEY, 1 if down else 0)
-        self._emit(EV_SYN, SYN_REPORT, 0)
+        # Press modifier first, release it last.
+        for code in (CHORD if down else reversed(CHORD)):
+            self._emit(EV_KEY, code, 1 if down else 0)
+            self._emit(EV_SYN, SYN_REPORT, 0)
         self.down = down
 
     def tap(self):
@@ -110,14 +122,14 @@ def watch(key):
                 zeros, signal_run = 0, signal_run + 1
             if live is not False and zeros >= MUTE_CHUNKS:
                 if live is not None:
-                    log(f"muted -> {KEY_NAME} {'tap' if MODE == 'tap' else 'up'}")
+                    log(f"muted -> {CHORD_NAME} {'tap' if MODE == 'tap' else 'up'}")
                     key.tap() if MODE == "tap" else key.set(False)
                 else:
                     log("initial state: muted")
                 live = False
             elif live is not True and signal_run >= UNMUTE_CHUNKS:
                 if live is not None:
-                    log(f"live -> {KEY_NAME} {'tap' if MODE == 'tap' else 'down'}")
+                    log(f"live -> {CHORD_NAME} {'tap' if MODE == 'tap' else 'down'}")
                     key.tap() if MODE == "tap" else key.set(True)
                 else:
                     log("initial state: live (waiting for the next unmute)")
@@ -130,7 +142,7 @@ def watch(key):
 
 def main():
     key = VirtualKey()
-    log(f"key={KEY_NAME} mode={MODE} source={SOURCE}")
+    log(f"key={CHORD_NAME} mode={MODE} source={SOURCE}")
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     try:
         while True:

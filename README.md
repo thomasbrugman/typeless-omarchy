@@ -98,11 +98,13 @@ The key and behaviour are set in `~/.config/typeless-mic-button.env`
 | App | `MIC_BUTTON_KEY` | `MIC_BUTTON_MODE` | Bind in the app |
 |---|---|---|---|
 | Typeless (default) | `voicecommand` | `tap` | Dictate → press the button once |
-| Wispr Flow | `f24` | `hold` | Push-to-talk → unmute, then mute |
+| Wispr Flow | `f24` + `MIC_BUTTON_MODIFIER=rightctrl` | `hold` | Push-to-talk → unmute, then mute |
 
-Wispr Flow only reads devices that have letter keys and has no
-`VoiceCommand` key code, so for Wispr the watcher sends F24 and holds it
-while the mic is live (push-to-talk).
+Wispr Flow only reads devices that have letter keys, has no `VoiceCommand`
+key code and insists on a modifier, so for Wispr the watcher holds
+Right Ctrl + F24 while the mic is live (push-to-talk). Its helper also only
+opens input devices that exist when it starts: start Wispr after the watcher
+(or restart Wispr after restarting the watcher).
 
 - The virtual device is disabled in Hyprland (`config/hypr/typeless.lua`) so
   the key never reaches apps; Typeless reads `/dev/input` directly.
