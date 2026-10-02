@@ -1,5 +1,9 @@
 # typeless-omarchy
 
+> **Status: shelved (2026-10-02).** Typeless is not installed; Wispr Flow is the
+> dictation app in use. Build outputs (`work/`, `stage/`, `dl/`) have been removed;
+> rebuild with the instructions below (`./build.sh`) if this is ever picked up again.
+
 An unofficial arm64 Linux port of [Typeless](https://www.typeless.com), the AI
 voice-dictation app, for Omarchy / Hyprland on aarch64 machines.
 
