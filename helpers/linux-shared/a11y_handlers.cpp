@@ -1,5 +1,5 @@
 // a11y_handlers.cpp - command dispatch and payload builders for
-// typeless-atspi-helper. Clean-room reimplementation.
+// typeless-atspi-helper. Interoperable reimplementation.
 #include "a11y_handlers.h"
 
 #include <algorithm>

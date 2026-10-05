@@ -1,4 +1,4 @@
-// native_child.cpp - clean-room reimplementation of Typeless'
+// native_child.cpp - interoperable reimplementation of Typeless'
 // LinuxShared::NativeChild (x64 libInputHelper.so / libContextHelper.so /
 // libUtilHelper.so). See native_child.h for the contract.
 #ifndef _GNU_SOURCE

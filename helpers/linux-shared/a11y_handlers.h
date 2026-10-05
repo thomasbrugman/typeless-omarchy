@@ -1,4 +1,4 @@
-// a11y_handlers.h - request dispatch for typeless-atspi-helper (clean-room
+// a11y_handlers.h - request dispatch for typeless-atspi-helper (interoperable
 // reimplementation of Typeless' linux-shared/a11y_handlers.cpp).
 #pragma once
 

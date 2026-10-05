@@ -1,4 +1,4 @@
-// a11y_client.cpp - clean-room reimplementation of LinuxShared::A11y::Client
+// a11y_client.cpp - interoperable reimplementation of LinuxShared::A11y::Client
 // (x64 libInputHelper.so / libContextHelper.so / libUtilHelper.so).
 #include "a11y_client.h"
 

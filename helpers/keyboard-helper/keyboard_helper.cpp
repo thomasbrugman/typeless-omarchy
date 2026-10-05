@@ -1,4 +1,4 @@
-// Clean-room reimplementation of Typeless' libKeyboardHelper.so (Linux) for arm64.
+// Interoperable reimplementation of Typeless' libKeyboardHelper.so (Linux) for arm64.
 //
 // Behaviour was reconstructed from the x64 build (v2.2.0) so the JS side
 // (keyboard-helper-child-process.js, loaded through koffi 2.14.1) sees the same

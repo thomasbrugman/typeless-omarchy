@@ -1,4 +1,4 @@
-// Shared helpers for the arm64 clean-room libInputHelper.so.
+// Shared helpers for the arm64 reimplementation of libInputHelper.so.
 #pragma once
 
 #include <cstddef>

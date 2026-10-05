@@ -10,11 +10,12 @@ voice-dictation app, for Omarchy / Hyprland on aarch64 machines.
 Typeless only ships an x64 `.deb` for Linux. The app is Electron, so most of it
 runs anywhere once its runtime is swapped, but it loads six closed-source x64
 native helpers in-process. On a 16K-page kernel (Apple silicon) x86 emulation
-isn't an option, so this repo contains **clean-room arm64 reimplementations**
-of those helpers, written against the behaviour of the originals, plus the
-scripts that turn the official download into a working arm64 install.
+isn't an option, so this repo contains **interoperable arm64
+reimplementations** of those helpers (behaviour reconstructed from the x64
+binaries for interoperability), plus the scripts that turn the official
+download into a working arm64 install.
 
-**Nothing from Typeless is in this repo.** `build.sh` downloads the official
+**No Typeless code or binaries are in this repo.** `build.sh` downloads the official
 package from Typeless's own update feed at build time (verified against the
 feed's sha512) and assembles the port locally. Not affiliated with Typeless.
 
@@ -125,3 +126,10 @@ opens input devices that exist when it starts: start Wispr after the watcher
   that `patches/20-force-x11.sh` was applied (rebuild).
 - **Logs:** start `~/.local/opt/Typeless/typeless` from a terminal; the helpers
   print to stderr. Mic watcher: `journalctl --user -u typeless-mic-button`.
+
+## License
+
+MIT for the scripts and helper sources in this repository; see
+[LICENSE](LICENSE). Typeless itself is proprietary, is not included, and is
+downloaded from its vendor at build time under its own terms. This is an
+unofficial project, not affiliated with or endorsed by Typeless.

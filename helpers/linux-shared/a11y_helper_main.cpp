@@ -1,4 +1,4 @@
-// a11y_helper_main.cpp - typeless-atspi-helper entry point (clean-room
+// a11y_helper_main.cpp - typeless-atspi-helper entry point (interoperable
 // reimplementation of Typeless' linux-shared/a11y_helper_main.cpp).
 //
 // Single-threaded server:

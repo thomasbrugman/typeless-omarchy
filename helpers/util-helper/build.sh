@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the clean-room arm64 libUtilHelper.so.
+# Builds the arm64 reimplementation of libUtilHelper.so.
 # Output: ../out/util-helper/build/linux/arm64/libUtilHelper.so
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"

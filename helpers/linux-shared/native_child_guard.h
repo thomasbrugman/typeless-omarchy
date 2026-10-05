@@ -1,5 +1,5 @@
 /*
- * native_child_guard.h - clean-room reimplementation of Typeless'
+ * native_child_guard.h - interoperable reimplementation of Typeless'
  * linux-shared/native_child_guard.c (runtime dir, instance lock, listen
  * socket and parent-death helpers shared by the native child processes).
  *

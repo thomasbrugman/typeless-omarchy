@@ -1,5 +1,5 @@
 // atspi_accessible.h - AT-SPI access layer of typeless-atspi-helper
-// (clean-room reimplementation of Typeless' linux-shared/atspi_accessible.cpp,
+// (interoperable reimplementation of Typeless' linux-shared/atspi_accessible.cpp,
 // atspi_api.h, atspi_session.h and a11y_apartment.h).
 //
 // Everything here runs on the helper's single thread. All libatspi traffic

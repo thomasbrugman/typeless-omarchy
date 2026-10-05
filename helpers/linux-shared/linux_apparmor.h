@@ -1,5 +1,5 @@
 // linux_apparmor.h - tiny AppArmor helpers used by typeless-atspi-helper
-// (clean-room reimplementation of Typeless' linux-shared/linux_apparmor.h).
+// (interoperable reimplementation of Typeless' linux-shared/linux_apparmor.h).
 #pragma once
 
 #include <cstdio>

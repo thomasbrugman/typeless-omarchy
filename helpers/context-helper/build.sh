@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the clean-room arm64 libContextHelper.so.
+# Builds the arm64 reimplementation of libContextHelper.so.
 # Output: ../out/context-helper/build/linux/arm64/libContextHelper.so
 set -euo pipefail
 

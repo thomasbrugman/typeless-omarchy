@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the arm64 clean-room libInputHelper.so + typeless-clipboard.
+# Build the arm64 reimplementation of libInputHelper.so + typeless-clipboard.
 #
 # Output: helpers/out/input-helper/build/linux/arm64/
 #   libInputHelper.so      koffi-loaded library (same C ABI as the x64 original)

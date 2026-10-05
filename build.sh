@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build an arm64 Typeless from the official x64 .deb:
-#   1. compile the clean-room arm64 helper libraries in helpers/
+#   1. compile the arm64 helper libraries (interoperable reimplementations) in helpers/
 #   2. download the upstream x64 .deb and swap in an arm64 Electron runtime of
 #      the same version (fuses mirrored), arm64 better-sqlite3, koffi's
 #      bundled linux_arm64 build

@@ -1,5 +1,5 @@
 // a11y_types.h - request/response types shared by the typeless-atspi-helper
-// server and the in-process client (clean-room reimplementation of Typeless'
+// server and the in-process client (interoperable reimplementation of Typeless'
 // linux-shared/a11y_types.h + atspi_walk_limits.h; field layout matches the
 // x64 DWARF).
 #pragma once

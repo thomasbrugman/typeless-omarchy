@@ -1,4 +1,4 @@
-// a11y_ipc.cpp - clean-room reimplementation of Typeless' linux-shared
+// a11y_ipc.cpp - interoperable reimplementation of Typeless' linux-shared
 // A11y wire codec (EncodeRequest/DecodeRequest/EncodeResponse/DecodeResponse,
 // WriteFrame/ReadFrame). Output bytes match the x64 original.
 #include "a11y_ipc.h"

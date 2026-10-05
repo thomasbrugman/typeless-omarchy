@@ -1,4 +1,4 @@
-// Clean-room AT-SPI client for libContextHelper.
+// AT-SPI client for libContextHelper.
 //
 // The x64 build spawns a separate `typeless-atspi-helper` process that links
 // libatspi/GLib and answers JSON requests over a unix socket. Here we talk the

@@ -1,4 +1,4 @@
-// Exported C ABI of libInputHelper.so (clean-room arm64 port of Typeless 2.2.0).
+// Exported C ABI of libInputHelper.so (interoperable arm64 reimplementation for Typeless 2.2.0).
 //
 // JS binding (koffi 2.14.1, bootstrapPrimaryInstance ~7700-7960). The app passes
 // `{async: true}` as a 4th lib.func() argument, which koffi ignores: every call

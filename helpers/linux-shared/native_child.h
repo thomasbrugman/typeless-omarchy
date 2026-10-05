@@ -1,5 +1,5 @@
 // native_child.h - spawn / connect / terminate management for Typeless'
-// native child processes (clean-room reimplementation of the x64
+// native child processes (interoperable reimplementation of the x64
 // LinuxShared::NativeChild namespace that lives inside libInputHelper.so,
 // libContextHelper.so and libUtilHelper.so).
 //

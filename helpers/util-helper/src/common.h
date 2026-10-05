@@ -1,4 +1,4 @@
-// Clean-room arm64 reimplementation of Typeless libUtilHelper.so (Linux).
+// Interoperable arm64 reimplementation of Typeless libUtilHelper.so (Linux).
 // Shared internal declarations.
 #pragma once
 

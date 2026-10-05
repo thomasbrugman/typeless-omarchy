@@ -1,5 +1,5 @@
 // atspi_accessible.cpp - AT-SPI access layer for typeless-atspi-helper.
-// Clean-room reimplementation; see atspi_accessible.h.
+// Interoperable reimplementation; see atspi_accessible.h.
 #include "atspi_accessible.h"
 
 #include <algorithm>

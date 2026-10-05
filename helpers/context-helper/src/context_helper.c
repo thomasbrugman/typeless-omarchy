@@ -1,4 +1,4 @@
-// libContextHelper.so - clean-room Linux arm64 implementation of the Typeless
+// libContextHelper.so - interoperable Linux arm64 reimplementation of the Typeless
 // context helper C ABI (loaded in the Electron main process through koffi).
 //
 // Exported ABI (matches the x64 build):

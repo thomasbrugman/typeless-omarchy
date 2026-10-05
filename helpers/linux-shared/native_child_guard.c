@@ -1,5 +1,5 @@
 /*
- * native_child_guard.c - clean-room reimplementation (see header).
+ * native_child_guard.c - interoperable reimplementation (see header).
  * Behaviour mirrors the x64 original (native_child_guard.c in Typeless 2.2.0).
  */
 #define _GNU_SOURCE

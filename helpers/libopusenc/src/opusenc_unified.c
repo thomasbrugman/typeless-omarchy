@@ -1,5 +1,5 @@
 /*
- * opusenc_unified.c -- clean-room re-implementation of the "libopusenc-unified
+ * opusenc_unified.c -- interoperable reimplementation of the "libopusenc-unified
  * 1.0.0" convenience layer that Typeless bundles inside its libopusenc.so.
  *
  * Behaviour (argument order, struct layouts, return codes, ctl calls, Vorbis

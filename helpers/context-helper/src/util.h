@@ -1,4 +1,4 @@
-// Small shared utilities for the clean-room libContextHelper (Linux arm64).
+// Small shared utilities for the reimplementation of libContextHelper (Linux arm64).
 #pragma once
 
 #include <stddef.h>

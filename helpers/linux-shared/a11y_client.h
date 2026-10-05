@@ -1,4 +1,4 @@
-// a11y_client.h - in-process client for typeless-atspi-helper (clean-room
+// a11y_client.h - in-process client for typeless-atspi-helper (interoperable
 // reimplementation of Typeless' LinuxShared::A11y::Client).
 //
 // Thread-safe: every call takes one process-wide (per shared object) mutex,
