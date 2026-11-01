@@ -103,13 +103,13 @@ jobs:
         run: |
           set -euo pipefail
           cat > notes.md <<EOF
-          Unofficial arm64 (aarch64) build of Typeless $VERSION for Omarchy / Hyprland.
+          Unofficial arm64 (aarch64) build of Typeless $VERSION for Omarchy and Hyprland.
 
-          The application bundle is Typeless $VERSION, taken from the vendor's own
-          package and checked against the sha512 published on their update feed.
-          The x64 Electron runtime is replaced with the matching arm64 build, and
-          the six native helpers are the interoperable arm64 reimplementations in
-          this repository. Typeless itself is proprietary and is not in this repo.
+          The bundle is Typeless $VERSION, taken from the vendor's own package and
+          checked against the sha512 on their update feed. The x64 Electron runtime
+          is replaced with the matching arm64 build, and the six native helpers are
+          the arm64 reimplementations in this repository. Typeless itself is
+          proprietary and isn't part of the source here.
 
           ## Install
 
@@ -118,11 +118,20 @@ jobs:
           sha256sum -c SHA256SUMS
           tar --zstd -xf $ASSET
           cd ${ASSET%.tar.zst}
-          ./install.sh --hyprland    # drop --hyprland if you don't want the window rules
+          ./install.sh --hyprland
           \`\`\`
 
-          Then log out and back in once if \`input\` group membership changed, launch
+          Installing through pacman is the easier way to keep it updated:
+
+          \`\`\`
+          printf '\n[typeless-omarchy]\nSigLevel = Optional TrustAll\nServer = https://thomasbrugman.github.io/typeless-omarchy\n' | sudo tee -a /etc/pacman.conf
+          sudo pacman -Sy && omarchy pkg add typeless-omarchy-bin
+          \`\`\`
+
+          Log out and back in once if \`input\` group membership changed, then launch
           Typeless, sign in, and bind the Dictate shortcut in the app.
+
+          *posted on behalf of thomasbrugman by deepseek/deepseek-v4.1-flash in command-code with default*
           EOF
           gh release create "$VERSION" "$ASSET" SHA256SUMS \
             --title "$VERSION" \
