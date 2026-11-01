@@ -14,9 +14,16 @@ shopt -s nullglob
 cd "$(dirname "$0")"
 ROOT=$PWD
 
-VERSION=${1:-${TYPELESS_VERSION:-2.2.0}}
-DEB=Typeless-$VERSION-x64.deb
 FEED=https://typeless-static.com/desktop-release
+# With no argument the version comes from the update feed, so a plain
+# ./build.sh always tracks the latest release. Pin with ./build.sh 2.2.1 or
+# TYPELESS_VERSION=2.2.1.
+VERSION=${1:-${TYPELESS_VERSION:-}}
+if [ -z "$VERSION" ]; then
+  VERSION=$(curl -fsSL "$FEED/latest-linux.yml" | sed -n 's/^version: //p' | head -1)
+  [ -n "$VERSION" ] || { echo "could not read the latest version from $FEED/latest-linux.yml" >&2; exit 1; }
+fi
+DEB=Typeless-$VERSION-x64.deb
 STAGE=$ROOT/stage/Typeless
 WORK=$ROOT/work
 

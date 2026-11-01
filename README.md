@@ -1,6 +1,15 @@
 # typeless-omarchy
 
-> **Status: shelved (2026-10-02).** Typeless is not installed; Wispr Flow is the
+> **Fork status.** Upstream describes this port as shelved, but it still builds:
+> `./build.sh` now reads the current release from Typeless's update feed and
+> verifies the `.deb` against the feed's sha512, so it tracks the latest version
+> without edits. The XWayland patch is also version-agnostic, unlike upstream's
+> which pinned the 2.2.0 entry chunk name. Verified building 2.2.1 on
+> aarch64/Omarchy (Hyprland 0.57). Pin a release with `./build.sh 2.2.1` or
+> `TYPELESS_VERSION=2.2.1`; if a future release changes the bundle layout the
+> patches fail loudly rather than shipping a half-ported app.
+>
+> **Upstream status (2026-10-02).** Typeless is not installed; Wispr Flow is the
 > dictation app in use. Build outputs (`work/`, `stage/`, `dl/`) have been removed;
 > rebuild with the instructions below (`./build.sh`) if this is ever picked up again.
 
