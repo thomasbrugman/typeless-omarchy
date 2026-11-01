@@ -131,7 +131,8 @@ jobs:
           Log out and back in once if \`input\` group membership changed, then launch
           Typeless, sign in, and bind the Dictate shortcut in the app.
 
-          *posted on behalf of thomasbrugman by deepseek/deepseek-v4.1-flash in command-code with default*
+          > [!NOTE]
+          > posted on behalf of thomasbrugman by deepseek/deepseek-v4.1-flash in command-code with default
           EOF
           gh release create "$VERSION" "$ASSET" SHA256SUMS \
             --title "$VERSION" \
