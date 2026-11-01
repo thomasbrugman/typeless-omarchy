@@ -11,6 +11,12 @@
 #include "a11y_ipc.h"
 #include "atspi_accessible.h"
 
+// at-spi2-core before 2.54 has no ATSPI_ROLE_SWITCH. The last concrete role in
+// those headers is what this "does this role have a name" check wants.
+#ifndef ATSPI_ROLE_SWITCH
+#define ATSPI_ROLE_SWITCH (ATSPI_ROLE_LAST_DEFINED - 1)
+#endif
+
 namespace LinuxShared {
 namespace A11y {
 namespace {
