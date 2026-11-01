@@ -42,6 +42,29 @@ window rules, `--mic-button[=<source>]` adds the USB-mic button watcher.
 `./uninstall.sh` removes everything (`--purge` also deletes
 `~/.config/Typeless`).
 
+## Prebuilt releases
+
+[`.github/workflows/release.yml`](.github/workflows/release.yml) checks Typeless's
+update feed every 6 hours and, when a version it has not published yet appears,
+builds it on an aarch64 runner and publishes a release with **the same version
+number Typeless uses** (upstream `3.0` → release tag `3.0`). The `.deb` is still
+fetched from the vendor and checked against the feed's sha512; only the arm64
+runtime and helpers are ours.
+
+That builds on Typeless's code without anyone watching, so treat a red run as
+"upstream changed something": the patches in `patches/` assert on the bundle
+layout they expect and fail loudly rather than shipping a half-ported app.
+
+Installing a published build means no toolchain and no compile:
+
+```bash
+gh release download 2.2.1 --pattern '*.tar.zst' --pattern SHA256SUMS   # omit version for latest
+sha256sum -c SHA256SUMS
+tar --zstd -xf Typeless-2.2.1-arm64-omarchy.tar.zst
+cd Typeless-2.2.1-arm64-omarchy
+./install.sh --hyprland
+```
+
 ### Requirements
 
 - aarch64 Linux with Wayland (tested: Omarchy, Hyprland 0.56, PipeWire)

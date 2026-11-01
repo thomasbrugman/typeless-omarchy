@@ -1,0 +1,135 @@
+name: Release
+
+# Builds the latest Typeless release for aarch64 and publishes it with the same
+# version number Typeless uses, so tag 3.0 here means Typeless 3.0 upstream.
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to build (defaults to the newest one on the update feed)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve upstream version
+        id: upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          feed=https://typeless-static.com/desktop-release/latest-linux.yml
+          latest=$(curl -fsSL "$feed" | sed -n 's/^version: //p' | head -1)
+          if [ -z "$latest" ]; then
+            echo "::error::could not read a version from $feed"
+            exit 1
+          fi
+          version=${FORCED_VERSION:-$latest}
+          echo "newest upstream: $latest"
+          echo "building:        $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "$version" >/dev/null 2>&1; then
+            echo "release $version already published; nothing to do"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install build dependencies
+        if: steps.upstream.outputs.publish == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config autoconf automake libtool \
+            libdbus-1-dev libglib2.0-dev libatspi2.0-dev libpulse-dev \
+            libsecret-1-dev libwayland-dev libwayland-bin wayland-protocols \
+            libarchive-tools curl python3 zstd file
+          # Shared libraries the arm64 Electron binary needs even in node mode.
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libnspr4 libgtk-3-0t64 libasound2t64 libgbm1 libdrm2 \
+            libcups2t64 libatk-bridge2.0-0t64 libxkbcommon0 libxcomposite1 \
+            libxdamage1 libxfixes3 libxrandr2 libpango-1.0-0 libcairo2 \
+            libatspi2.0-0t64 libexpat1 libx11-xcb1 libxtst6
+
+      - uses: actions/setup-node@v4
+        if: steps.upstream.outputs.publish == 'true'
+        with:
+          node-version: '22'
+
+      - name: Build
+        if: steps.upstream.outputs.publish == 'true'
+        run: |
+          set -euo pipefail
+          ./build.sh "${{ steps.upstream.outputs.version }}"
+          file stage/Typeless/typeless
+          file stage/Typeless/typeless | grep -q 'ARM aarch64' \
+            || { echo "::error::staged binary is not aarch64"; exit 1; }
+
+      - name: Assemble installable tree
+        if: steps.upstream.outputs.publish == 'true'
+        id: package
+        run: |
+          set -euo pipefail
+          version=${{ steps.upstream.outputs.version }}
+          name=Typeless-${version}-arm64-omarchy
+          mkdir -p "pkg/$name"
+          cp -a install.sh LICENSE README.md config extras "pkg/$name/"
+          cp -a stage/Typeless "pkg/$name/stage/Typeless"
+          [ -d stage/icons ] && cp -a stage/icons "pkg/$name/stage/icons" || true
+          tar -C pkg --zstd -cf "$name.tar.zst" "$name"
+          sha256sum "$name.tar.zst" > SHA256SUMS
+          echo "asset=$name.tar.zst" >> "$GITHUB_OUTPUT"
+
+      - name: Publish release
+        if: steps.upstream.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.upstream.outputs.version }}
+          ASSET: ${{ steps.package.outputs.asset }}
+        run: |
+          set -euo pipefail
+          cat > notes.md <<EOF
+          Unofficial arm64 (aarch64) build of Typeless $VERSION for Omarchy / Hyprland.
+
+          The application bundle is Typeless $VERSION, taken from the vendor's own
+          package and checked against the sha512 published on their update feed.
+          The x64 Electron runtime is replaced with the matching arm64 build, and
+          the six native helpers are the interoperable arm64 reimplementations in
+          this repository. Typeless itself is proprietary and is not in this repo.
+
+          ## Install
+
+          \`\`\`
+          gh release download $VERSION --repo ${{ github.repository }} --pattern '*.tar.zst' --pattern SHA256SUMS
+          sha256sum -c SHA256SUMS
+          tar --zstd -xf $ASSET
+          cd ${ASSET%.tar.zst}
+          ./install.sh --hyprland    # drop --hyprland if you don't want the window rules
+          \`\`\`
+
+          Then log out and back in once if \`input\` group membership changed, launch
+          Typeless, sign in, and bind the Dictate shortcut in the app.
+          EOF
+          gh release create "$VERSION" "$ASSET" SHA256SUMS \
+            --title "$VERSION" \
+            --notes-file notes.md \
+            --target "$GITHUB_SHA"
+
+      - name: Report build failure
+        if: failure()
+        run: |
+          echo "::error::arm64 build of ${{ steps.upstream.outputs.version }} failed; check whether the upstream bundle layout changed and the patches in patches/ need updating"
