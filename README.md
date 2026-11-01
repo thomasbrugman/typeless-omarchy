@@ -65,6 +65,36 @@ cd Typeless-2.2.1-arm64-omarchy
 ./install.sh --hyprland
 ```
 
+## Install with pacman
+
+Each release is also repackaged as an Arch package and published as a pacman
+repository, so it installs and upgrades like any other package. Add the
+repository once:
+
+```bash
+sudo tee -a /etc/pacman.conf >/dev/null <<'EOF'
+
+[typeless-omarchy]
+SigLevel = Optional TrustAll
+Server = https://thomasbrugman.github.io/typeless-omarchy
+EOF
+
+sudo pacman -Sy
+omarchy pkg add typeless-omarchy-bin
+```
+
+Upgrades then arrive with `omarchy update` or `pacman -Syu`. The package
+installs `/opt/Typeless`, `/usr/bin/typeless`, a desktop entry, and udev rules
+that grant the seat user access to `/dev/input/event*` and `/dev/uinput`, so no
+group changes or config edits are needed. The floating-bar rules ship in
+`/usr/share/typeless-omarchy/hypr/typeless.lua`; the post-install message shows
+how to enable them.
+
+Packages are unsigned and the server is HTTPS-only (`TrustAll` above is what
+lets pacman accept them). Signing the repository with a key held in CI is the
+obvious improvement if that trust model is too loose. `typeless-bin` from the
+AUR conflicts, so remove it first — pacman will do it for you on install.
+
 ### Requirements
 
 - aarch64 Linux with Wayland (tested: Omarchy, Hyprland 0.56, PipeWire)

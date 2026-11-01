@@ -1,0 +1,32 @@
+post_install() {
+  modprobe uinput 2>/dev/null || true
+  udevadm control --reload-rules 2>/dev/null || true
+  udevadm trigger --sysname-match=uinput 2>/dev/null || true
+  cat <<'EOF'
+Typeless (unofficial arm64 build) is installed.
+
+Launch it from the application launcher, sign in, and bind the Dictate
+shortcut inside the app. It runs under XWayland because the floating bar
+positions itself with Xlib; no extra setup is needed for that.
+
+The Hyprland window rules for the floating bar ship in
+/usr/share/typeless-omarchy/hypr/typeless.lua. Omarchy users can enable them
+with:
+
+  install -Dm644 /usr/share/typeless-omarchy/hypr/typeless.lua ~/.config/hypr/typeless.lua
+  echo 'require("hypr.typeless")' >> ~/.config/hypr/hyprland.lua
+
+This build replaces the x64 helpers with arm64 reimplementations, so the
+in-app updater is disabled; updates come from pacman.
+EOF
+}
+
+post_upgrade() {
+  post_install
+}
+
+pre_remove() {
+  cat <<'EOF'
+Your Typeless profile and sign-in in ~/.config/Typeless are kept.
+EOF
+}

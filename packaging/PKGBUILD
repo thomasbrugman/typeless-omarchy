@@ -1,0 +1,73 @@
+# Maintainer: Thomas Brugman <thomas.brugman.teb3@gmail.com>
+#
+# Repackages the arm64 build published by the typeless-omarchy workflow, so the
+# app installs and upgrades through pacman. The application itself is
+# proprietary and is fetched from the vendor by that workflow; everything in
+# the source repository is MIT.
+
+pkgname=typeless-omarchy-bin
+pkgver=2.2.1
+pkgrel=1
+pkgdesc='Unofficial arm64 build of Typeless (AI voice dictation) for Omarchy/Hyprland'
+arch=('aarch64')
+url='https://github.com/thomasbrugman/typeless-omarchy'
+license=('LicenseRef-proprietary')
+depends=('acl' 'alsa-lib' 'at-spi2-core' 'cairo' 'dbus' 'expat' 'gcc-libs'
+         'glib2' 'glibc' 'gtk3' 'libcups' 'libdrm' 'libglvnd' 'libnotify'
+         'libpulse' 'libsecret' 'libx11' 'libxcb' 'libxcomposite' 'libxdamage'
+         'libxext' 'libxfixes' 'libxkbcommon' 'libxrandr' 'libxss' 'libxtst'
+         'mesa' 'nspr' 'nss' 'pango' 'procps-ng' 'systemd-libs' 'util-linux'
+         'wl-clipboard' 'xdg-utils' 'xorg-xwayland')
+optdepends=('ibus: VoiceIME integration'
+            'libappindicator-gtk3: tray icon support')
+provides=('typeless')
+conflicts=('typeless' 'typeless-bin' 'typeless-omarchy' 'typeless-omarchy-bin')
+options=('!strip' '!debug')
+install=typeless-omarchy-bin.install
+source=("$url/releases/download/$pkgver/Typeless-$pkgver-arm64-omarchy.tar.zst")
+sha256sums=('a32a24d691ab2bc430b58ad5e9b9c66c029d601071a1762feb819839c7e25cf9')
+
+package() {
+  local bundle="$srcdir/Typeless-$pkgver-arm64-omarchy"
+  local app="$pkgdir/opt/Typeless"
+
+  install -d "$app"
+  cp -a "$bundle/stage/Typeless/." "$app/"
+
+  install -d "$pkgdir/usr/bin"
+  ln -s /opt/Typeless/typeless "$pkgdir/usr/bin/typeless"
+
+  # Window rules for the floating bar; read from this path rather than forced
+  # into the user's config.
+  install -Dm644 "$bundle/config/hypr/typeless.lua" \
+    "$pkgdir/usr/share/typeless-omarchy/hypr/typeless.lua"
+
+  install -Dm644 "$app/resources/build/icons/png/256x256.png" \
+    "$pkgdir/usr/share/icons/hicolor/256x256/apps/typeless.png"
+
+  install -d "$pkgdir/usr/share/applications"
+  cat > "$pkgdir/usr/share/applications/typeless.desktop" <<'EOF'
+[Desktop Entry]
+Name=Typeless
+Comment=AI voice dictation (unofficial arm64 port)
+Exec=env -u ELECTRON_RUN_AS_NODE /opt/Typeless/typeless %u
+Terminal=false
+Type=Application
+Icon=typeless
+StartupWMClass=Typeless
+MimeType=x-scheme-handler/typeless;
+Categories=Utility;Office;
+EOF
+
+  # The app reads keyboards from evdev and injects text through uinput and the
+  # clipboard, so the seat user needs both without joining a group.
+  install -Dm644 /dev/stdin "$pkgdir/usr/lib/udev/rules.d/70-typeless-input.rules" <<'EOF'
+ACTION=="add|change", SUBSYSTEM=="input", KERNEL=="event*", TAG+="uaccess"
+EOF
+  install -Dm644 /dev/stdin "$pkgdir/usr/lib/udev/rules.d/70-typeless-uinput.rules" <<'EOF'
+ACTION!="remove", KERNEL=="uinput", SUBSYSTEM=="misc", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput", TAG+="uaccess"
+EOF
+  install -Dm644 /dev/stdin "$pkgdir/usr/lib/modules-load.d/typeless-uinput.conf" <<'EOF'
+uinput
+EOF
+}

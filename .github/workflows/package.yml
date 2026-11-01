@@ -1,0 +1,99 @@
+name: Package
+
+# Turns each published release into an Arch package and publishes it as a
+# pacman repository on GitHub Pages, so the app installs and upgrades through
+# pacman (and therefore through `omarchy pkg add`).
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag to package (defaults to the newest release)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: package
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04-arm
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          version=${INPUT_VERSION:-${RELEASE_TAG:-}}
+          if [ -z "$version" ]; then
+            version=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          fi
+          echo "packaging $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch the release artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          gh release download "$VERSION" --repo "$GITHUB_REPOSITORY" \
+            --pattern '*.tar.zst' --dir build
+          ls -lh build
+
+      - name: Build the package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          cp packaging/PKGBUILD packaging/typeless-omarchy-bin.install build/
+          asset=$(basename build/*.tar.zst)
+          sha=$(sha256sum "build/$asset" | cut -d' ' -f1)
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" build/PKGBUILD
+          sed -i "s/^sha256sums=(.*/sha256sums=('${sha}')/" build/PKGBUILD
+          # makepkg refuses to run as root, so build as a throwaway user inside a
+          # native aarch64 Arch userspace and hand the results back on the volume.
+          docker run --rm -v "$PWD/build:/build" -w /build \
+            menci/archlinuxarm:base-devel bash -c '
+              set -euo pipefail
+              useradd -m builder
+              chown -R builder /build
+              su builder -c "cd /build && makepkg --noconfirm --nodeps --force"
+              mkdir -p /build/public
+              mv /build/*.pkg.tar.* /build/public/
+              repo-add -n -R /build/public/typeless-omarchy.db.tar.gz /build/public/*.pkg.tar.*
+              cd /build/public
+              # Pages can not serve symlinks, so materialise the db links pacman asks for.
+              for f in typeless-omarchy.db typeless-omarchy.files; do
+                [ -L "$f" ] && cp --remove-destination "$(readlink -f "$f")" "$f"
+              done
+            '
+          ls -lh build/public
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/public
+
+      - name: Deploy the repository
+        id: deploy
+        uses: actions/deploy-pages@v4
