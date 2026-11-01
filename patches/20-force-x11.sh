@@ -24,7 +24,9 @@ grep -q "force-x11.js" "$d/index.js" && exit 0
 python3 - "$d/index.js" <<'PY'
 import sys
 p = sys.argv[1]; s = open(p).read()
-old = "import'./index-Dhin5iqu.js';"
-assert s.count(old) == 1, "entry import not found"
-open(p, "w").write(s.replace(old, "import'./force-x11.js';" + old))
+# Entry chunk names are content-hashed and change between releases, so prepend
+# the shim as a hoisted import instead of anchoring on the upstream chunk name.
+shim = "import'./force-x11.js';"
+assert "force-x11.js" not in s, "already patched"
+open(p, "w").write(shim + s)
 PY
