@@ -13,3 +13,8 @@ helpers/libopusenc/*.tar.gz
 *.o
 *.so
 __pycache__/
+
+# Release packaging
+/pkg/
+*.tar.zst
+/SHA256SUMS

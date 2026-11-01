@@ -86,7 +86,7 @@ jobs:
           set -euo pipefail
           version=${{ steps.upstream.outputs.version }}
           name=Typeless-${version}-arm64-omarchy
-          mkdir -p "pkg/$name"
+          mkdir -p "pkg/$name/stage"
           cp -a install.sh LICENSE README.md config extras "pkg/$name/"
           cp -a stage/Typeless "pkg/$name/stage/Typeless"
           [ -d stage/icons ] && cp -a stage/icons "pkg/$name/stage/icons" || true
