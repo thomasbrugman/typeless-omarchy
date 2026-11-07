@@ -1,5 +1,4 @@
 // Minimal RIFF/WAVE PCM loader for short UI cue sounds.
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -122,29 +121,4 @@ bool LoadCueWavPcmFile(const std::string& path, CueWavPcm* out, std::string* err
   out->durationMilliseconds = durationMs;
   out->pcmBytes.assign(data.begin() + dataOff, data.begin() + dataOff + dataLen);
   return true;
-}
-
-// Normalises 16-bit PCM up (never down) so that its peak reaches targetPeak
-// (0..1] of full scale.
-void BoostCueWavPcmToTargetPeak(CueWavPcm* pcm, double targetPeak) {
-  if (!pcm || pcm->bitsPerSample != 16 || pcm->pcmBytes.size() < 2) return;
-  if (targetPeak <= 0.0 || targetPeak > 1.0) return;
-  const size_t n = pcm->pcmBytes.size() / 2;
-  int16_t* s = reinterpret_cast<int16_t*>(pcm->pcmBytes.data());
-  int peak = 0;
-  for (size_t i = 0; i < n; ++i) {
-    int v = s[i];
-    int a = v == -32768 ? 32768 : (v < 0 ? -v : v);
-    if (a > peak) peak = a;
-  }
-  if (peak == 0) return;
-  int target = (int)(targetPeak * 32767.0 + 0.5);
-  if (target <= peak) return;
-  const double gain = (double)target / (double)peak;
-  for (size_t i = 0; i < n; ++i) {
-    long v = lround((double)s[i] * gain);
-    if (v < -32767) v = -32767;
-    if (v > 32767) v = 32767;
-    s[i] = (int16_t)v;
-  }
 }
