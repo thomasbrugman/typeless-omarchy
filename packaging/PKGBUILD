@@ -7,7 +7,7 @@
 
 pkgname=typeless-omarchy-bin
 pkgver=2.2.1
-pkgrel=2
+pkgrel=3
 pkgdesc='Unofficial arm64 build of Typeless (AI voice dictation) for Omarchy/Hyprland'
 arch=('aarch64')
 url='https://github.com/thomasbrugman/typeless-omarchy'
@@ -25,7 +25,7 @@ conflicts=('typeless' 'typeless-bin' 'typeless-omarchy' 'typeless-omarchy-bin')
 options=('!strip' '!debug')
 install=typeless-omarchy-bin.install
 source=("$url/releases/download/$pkgver/Typeless-$pkgver-arm64-omarchy.tar.zst")
-sha256sums=('81550443b862812ebd5f54e801a00778a7b7abbc348a4ae4694286483c8b98ca')
+sha256sums=('3e1bbcbce4715dff7597c3b43d90ad0f6bedeb7163745f92211cbf1248ac52fc')
 
 package() {
   local bundle="$srcdir/Typeless-$pkgver-arm64-omarchy"
