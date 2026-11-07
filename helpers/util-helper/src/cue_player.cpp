@@ -1,7 +1,6 @@
 // playSoundFile: plays a short 16-bit PCM WAV "cue" through PulseAudio.
 // Returns 1 = played (backend "pulse"), 0 = invalid WAV ("wav-invalid"),
 // -1 = PulseAudio unavailable/failed ("pulse-unavailable").
-#include <math.h>
 #include <stdio.h>
 
 #include <algorithm>
@@ -44,90 +43,6 @@ void StreamStateCallback(pa_stream* s, void* ud) {
 }
 
 void DrainCallback(pa_stream*, int, void* ud) { *static_cast<bool*>(ud) = true; }
-
-struct DefaultSinkVolume {
-  double linear = 1.0;
-  bool flatVolume = false;
-  bool valid = false;
-};
-
-bool ReadDefaultSinkVolume(PulseSession* s, DefaultSinkVolume* out) {
-  struct ServerInfoState {
-    bool failed = false;
-    std::string sinkName;
-  } si;
-  pa_operation* op = pa_context_get_server_info(
-      s->context(),
-      [](pa_context*, const pa_server_info* info, void* ud) {
-        auto* st = static_cast<ServerInfoState*>(ud);
-        if (!info) {
-          st->failed = true;
-          return;
-        }
-        if (info->default_sink_name && *info->default_sink_name) st->sinkName = info->default_sink_name;
-      },
-      &si);
-  if (!op || !s->WaitForOperation(op) || si.failed || si.sinkName.empty()) return false;
-
-  struct SinkState {
-    bool failed = false;
-    bool valid = false;
-    double linear = 0.0;
-    bool flat = false;
-  } ss;
-  op = pa_context_get_sink_info_by_name(
-      s->context(), si.sinkName.c_str(),
-      [](pa_context*, const pa_sink_info* info, int eol, void* ud) {
-        auto* st = static_cast<SinkState*>(ud);
-        if (eol < 0) {
-          st->failed = true;
-          return;
-        }
-        if (eol > 0 || !info) return;
-        st->valid = true;
-        st->linear = pa_sw_volume_to_linear(pa_cvolume_avg(&info->volume));
-        st->flat = (info->flags & PA_SINK_FLAT_VOLUME) != 0;
-      },
-      &ss);
-  if (!op || !s->WaitForOperation(op) || ss.failed || !ss.valid) return false;
-  out->linear = ss.linear;
-  out->flatVolume = ss.flat;
-  out->valid = true;
-  return true;
-}
-
-// Boosts the cue stream when the system output volume is low so the cue stays
-// audible: piecewise-linear gain over perceived (cube-root) volume, capped so
-// the effective level never exceeds ~0.35 perceived.
-pa_volume_t ComputeCueStreamVolume(PulseSession* s) {
-  DefaultSinkVolume v;
-  if (!ReadDefaultSinkVolume(s, &v) || v.flatVolume) return PA_VOLUME_NORM;
-  const double linear = v.linear;
-  const double perceived = cbrt(linear);
-  if (perceived >= 0.35) return PA_VOLUME_NORM;
-  static const double kX[] = {0.0, 0.1, 0.2, 0.3, 0.35};
-  static const double kY[] = {38.0, 36.0, 32.0, 24.0, 1.0};
-  const double kMaxEffective = 0.35 * 0.35 * 0.35;  // 0.042875
-  double gain;
-  if (perceived <= 0.0) {
-    if (linear <= 0.0) return pa_sw_volume_from_linear(38.0);
-    gain = kMaxEffective / linear;
-    if (gain > 38.0) return pa_sw_volume_from_linear(38.0);
-    return pa_sw_volume_from_linear(std::max(1.0, gain));
-  }
-  int i = perceived <= 0.1 ? 1 : perceived <= 0.2 ? 2 : perceived <= 0.3 ? 3 : 4;
-  const double dx = kX[i] - kX[i - 1];
-  if (dx <= 0.0) {
-    gain = kY[i];
-  } else {
-    gain = kY[i - 1] + (perceived - kX[i - 1]) / dx * (kY[i] - kY[i - 1]);
-  }
-  if (linear > 0.0) {
-    gain = std::min(gain, kMaxEffective / linear);
-    gain = std::max(1.0, gain);
-  }
-  return pa_sw_volume_from_linear(gain);
-}
 
 bool WriteAllPcm(PulseSession* s, pa_stream* stream, const CueWavPcm& pcm, StreamReadyState* st) {
   const auto& bytes = pcm.pcmBytes;
@@ -186,7 +101,7 @@ int PlayCueWavOnPulse(const CueWavPcm& pcm) {
   };
 
   pa_cvolume cv;
-  pa_cvolume_set(&cv, ss.channels, ComputeCueStreamVolume(&session));
+  pa_cvolume_set(&cv, ss.channels, PA_VOLUME_NORM);
   const pa_stream_flags_t flags = (pa_stream_flags_t)(PA_STREAM_INTERPOLATE_TIMING | PA_STREAM_AUTO_TIMING_UPDATE |
                                                       PA_STREAM_ADJUST_LATENCY);
   if (pa_stream_connect_playback(stream, nullptr, nullptr, flags, &cv, nullptr) < 0) {
