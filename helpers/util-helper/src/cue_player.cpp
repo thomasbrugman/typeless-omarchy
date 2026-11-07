@@ -241,7 +241,6 @@ UH_EXPORT int playSoundFile(const char* path) {
         LogCueBackend("wav-invalid", err);
         return 0;
       }
-      BoostCueWavPcmToTargetPeak(&pcm, 1.0);
       it = gCueWavCache.emplace(key, std::move(pcm)).first;
     }
     return PlayCueWavOnPulse(it->second);

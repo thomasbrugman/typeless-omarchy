@@ -67,7 +67,6 @@ struct CueWavPcm {
   std::vector<unsigned char> pcmBytes;
 };
 bool LoadCueWavPcmFile(const std::string& path, CueWavPcm* out, std::string* error);
-void BoostCueWavPcmToTargetPeak(CueWavPcm* pcm, double targetPeak);
 
 // ---- a11y_client.cpp -------------------------------------------------------
 namespace a11y_client {
